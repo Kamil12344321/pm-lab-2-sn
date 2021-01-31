@@ -1,48 +1,35 @@
 #include <Arduino.h>
-#include <stdio.h>
 
-char rxBuff[32];
-int bytesNo = 0;
-char paramStr[16];
-int paramVal = 0;
+#define BUTTON 2
+
+int stanPrzycisku;
+int poprzedniStanPrzycisku = LOW;
+unsigned long poprzedniCzas = 0;
+unsigned int liczba_nacisniec = 0;
 
 void setup() {
   Serial.begin(9600);
-  Serial.setTimeout(4000);
-
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(BUTTON, INPUT);
 }
 
 void loop() {
- bytesNo = Serial.readBytesUntil('\r' , rxBuff , sizeof(rxBuff) - 1);
+  int odczyt = digitalRead(BUTTON);
 
-  sscanf(rxBuff, "%s %d", paramStr,&paramVal);
+  if (odczyt != poprzedniStanPrzycisku) {
+    poprzedniCzas = millis();
+  }
 
-  if (bytesNo) {
-    Serial.print("Wykonuje...");
-    if (!strcmp(paramStr, "led")) {
-      if (paramVal) {
-        digitalWrite(LED_BUILTIN, HIGH);
-      } else {
-        digitalWrite(LED_BUILTIN, LOW);
+  if((millis() - poprzedniCzas) > 50) {
+    if (odczyt != stanPrzycisku) {
+      stanPrzycisku = odczyt;
+      if (stanPrzycisku == HIGH) {
+        liczba_nacisniec++;
+
+        Serial.print("Liczba nacisniec przycisku: ");
+        Serial.println(liczba_nacisniec);
       }
-      Serial.println("OK!");
-    } else if (!strcasecmp(paramStr, "blink")) {
-      for(int i = 0; i <paramVal; i++) {
-        digitalWrite(LED_BUILTIN, HIGH); delay(500);
-        digitalWrite(LED_BUILTIN, LOW); delay(500);
-      }
-      Serial.println("OK!");
-    } else {
-      Serial.println("Blad!");
     }
   }
-
-  for (int i = 0; i < Serial.available(); i++) {
-    Serial.read();
-  }
-
-for (int i = 0; i < sizeof(rxBuff); i++) {
-  rxBuff[i] = 0;
-}
+  
+  poprzedniStanPrzycisku = odczyt;
 }
